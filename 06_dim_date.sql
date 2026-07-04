@@ -23,14 +23,18 @@ CREATE TABLE dim_date
 (
     date_id INT PRIMARY KEY,
     full_date DATE NOT NULL,
-    day_number INT,
-    day_name VARCHAR(15),
-    week_number INT,
-    month_number INT,
-    month_name VARCHAR(15),
-    quarter_number INT,
     calendar_year INT,
-    is_weekend BIT
+    quarter_number INT,
+    month_number INT,
+    month_name VARCHAR(20),
+    week_of_year INT,
+    day_of_month INT,
+    day_of_week INT,
+    day_name VARCHAR(20),
+    is_weekend BIT,
+    is_month_end BIT,
+    is_quarter_end BIT,
+    is_year_end BIT
 );
 GO
 
@@ -48,36 +52,70 @@ BEGIN
     (
         date_id,
         full_date,
-        day_number,
-        day_name,
-        week_number,
+        calendar_year,
+        quarter_number,
         month_number,
         month_name,
-        quarter_number,
-        calendar_year,
-        is_weekend
+        week_of_year,
+        day_of_month,
+        day_of_week,
+        day_name,
+        is_weekend,
+        is_month_end,
+        is_quarter_end,
+        is_year_end
     )
 
     VALUES
     (
         CONVERT(INT, CONVERT(VARCHAR(8), @StartDate, 112)),
+
         @StartDate,
-        DAY(@StartDate),
-        DATENAME(WEEKDAY, @StartDate),
-        DATEPART(WEEK, @StartDate),
-        MONTH(@StartDate),
-        DATENAME(MONTH, @StartDate),
-        DATEPART(QUARTER, @StartDate),
+
         YEAR(@StartDate),
 
+        DATEPART(QUARTER, @StartDate),
+
+        MONTH(@StartDate),
+
+        DATENAME(MONTH, @StartDate),
+
+        DATEPART(WEEK, @StartDate),
+
+        DAY(@StartDate),
+
+        DATEPART(WEEKDAY, @StartDate),
+
+        DATENAME(WEEKDAY, @StartDate),
+
         CASE
-            WHEN DATENAME(WEEKDAY, @StartDate) IN ('Saturday','Sunday')
+            WHEN DATENAME(WEEKDAY, @StartDate) IN ('Saturday', 'Sunday')
+            THEN 1
+            ELSE 0
+        END,
+
+        CASE
+            WHEN @StartDate = EOMONTH(@StartDate)
+            THEN 1
+            ELSE 0
+        END,
+
+        CASE
+            WHEN MONTH(DATEADD(DAY, 1, @StartDate)) IN (1,4,7,10)
+                 AND DAY(DATEADD(DAY, 1, @StartDate)) = 1
+            THEN 1
+            ELSE 0
+        END,
+
+        CASE
+            WHEN MONTH(@StartDate) = 12
+                 AND DAY(@StartDate) = 31
             THEN 1
             ELSE 0
         END
     );
 
-    SET @StartDate = DATEADD(DAY,1,@StartDate);
+    SET @StartDate = DATEADD(DAY, 1, @StartDate);
 
 END
 GO
@@ -90,8 +128,9 @@ SELECT COUNT(*) AS total_dates
 FROM dim_date;
 GO
 
-SELECT TOP 10 *
-FROM dim_date;
+SELECT TOP (20) *
+FROM dim_date
+ORDER BY full_date;
 GO
 
 ---------------------------------------------------------------
