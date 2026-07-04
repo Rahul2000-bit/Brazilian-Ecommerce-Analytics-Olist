@@ -8,127 +8,92 @@ USE kaggle_data;
 GO
 
 -- ==========================================================
--- CUSTOMERS
+-- RECORD COUNT VALIDATION
 -- ==========================================================
 
--- Total Records
 SELECT COUNT(*) AS total_customers
 FROM customers;
 
--- Duplicate Customer IDs
-SELECT customer_id,
-       COUNT(*) AS duplicate_count
+SELECT COUNT(*) AS total_orders
+FROM orders;
+
+SELECT COUNT(*) AS total_order_items
+FROM order_items;
+
+SELECT COUNT(*) AS total_payments
+FROM order_payments;
+
+SELECT COUNT(*) AS total_products
+FROM products;
+
+SELECT COUNT(*) AS total_sellers
+FROM sellers;
+
+SELECT COUNT(*) AS total_reviews
+FROM order_reviews;
+
+SELECT COUNT(*) AS total_geolocations
+FROM geolocation;
+
+-- ==========================================================
+-- DUPLICATE VALIDATION
+-- ==========================================================
+
+-- Customers
+SELECT customer_id, COUNT(*) AS duplicate_count
 FROM customers
 GROUP BY customer_id
 HAVING COUNT(*) > 1;
 
--- NULL Customer IDs
-SELECT *
-FROM customers
-WHERE customer_id IS NULL;
-
--- ==========================================================
--- ORDERS
--- ==========================================================
-
--- Total Records
-SELECT COUNT(*) AS total_orders
-FROM orders;
-
--- Duplicate Order IDs
-SELECT order_id,
-       COUNT(*) AS duplicate_count
+-- Orders
+SELECT order_id, COUNT(*) AS duplicate_count
 FROM orders
 GROUP BY order_id
 HAVING COUNT(*) > 1;
 
--- Missing Customers
-SELECT o.order_id,
-       o.customer_id
-FROM orders o
-LEFT JOIN customers c
-ON o.customer_id = c.customer_id
-WHERE c.customer_id IS NULL;
-
--- Invalid Order Dates
-SELECT *
-FROM orders
-WHERE order_purchase_timestamp IS NULL;
-
--- ==========================================================
--- ORDER ITEMS
--- ==========================================================
-
--- Duplicate Order Item Keys
-SELECT order_id,
-       order_item_id,
-       COUNT(*) AS duplicate_count
-FROM order_items
-GROUP BY order_id,
-         order_item_id
+-- Products
+SELECT product_id, COUNT(*) AS duplicate_count
+FROM products
+GROUP BY product_id
 HAVING COUNT(*) > 1;
 
--- Invalid Prices
-SELECT *
-FROM order_items
-WHERE price < 0;
-
--- Invalid Freight
-SELECT *
-FROM order_items
-WHERE freight_value < 0;
-
--- ==========================================================
--- PAYMENTS
--- ==========================================================
-
--- Invalid Payment Amount
-SELECT *
-FROM order_payments
-WHERE payment_value <= 0;
-
--- Invalid Installments
-SELECT *
-FROM order_payments
-WHERE payment_installments < 0;
-
--- ==========================================================
--- PRODUCTS
--- ==========================================================
-
--- Missing Product IDs
-SELECT *
-FROM products
-WHERE product_id IS NULL;
-
--- Missing Categories
-SELECT *
-FROM products
-WHERE product_category_name IS NULL;
-
--- ==========================================================
--- SELLERS
--- ==========================================================
-
--- Duplicate Sellers
-SELECT seller_id,
-       COUNT(*) AS duplicate_count
+-- Sellers
+SELECT seller_id, COUNT(*) AS duplicate_count
 FROM sellers
 GROUP BY seller_id
 HAVING COUNT(*) > 1;
 
 -- ==========================================================
--- REVIEWS
+-- NULL VALIDATION
 -- ==========================================================
 
--- Invalid Review Scores
 SELECT *
-FROM order_reviews
-WHERE review_score NOT BETWEEN 1 AND 5;
+FROM customers
+WHERE customer_id IS NULL;
+
+SELECT *
+FROM orders
+WHERE order_id IS NULL
+   OR customer_id IS NULL;
+
+SELECT *
+FROM products
+WHERE product_id IS NULL;
+
+SELECT *
+FROM sellers
+WHERE seller_id IS NULL;
 
 -- ==========================================================
--- REFERENTIAL INTEGRITY
+-- REFERENTIAL INTEGRITY VALIDATION
 -- ==========================================================
+
+-- Orders without Customers
+SELECT o.order_id
+FROM orders o
+LEFT JOIN customers c
+ON o.customer_id = c.customer_id
+WHERE c.customer_id IS NULL;
 
 -- Order Items without Orders
 SELECT oi.order_id
@@ -166,21 +131,30 @@ ON r.order_id = o.order_id
 WHERE o.order_id IS NULL;
 
 -- ==========================================================
--- SUMMARY
+-- MONETARY VALIDATION
 -- ==========================================================
 
-SELECT 'Customers' AS table_name, COUNT(*) AS total_rows FROM customers
-UNION ALL
-SELECT 'Orders', COUNT(*) FROM orders
-UNION ALL
-SELECT 'Order Items', COUNT(*) FROM order_items
-UNION ALL
-SELECT 'Payments', COUNT(*) FROM order_payments
-UNION ALL
-SELECT 'Products', COUNT(*) FROM products
-UNION ALL
-SELECT 'Sellers', COUNT(*) FROM sellers
-UNION ALL
-SELECT 'Reviews', COUNT(*) FROM order_reviews
-UNION ALL
-SELECT 'Geolocation', COUNT(*) FROM geolocation;
+SELECT *
+FROM order_items
+WHERE price < 0
+   OR freight_value < 0;
+
+SELECT *
+FROM order_payments
+WHERE payment_value < 0;
+
+-- ==========================================================
+-- DATE VALIDATION
+-- ==========================================================
+
+SELECT *
+FROM orders
+WHERE order_purchase_timestamp IS NULL;
+
+-- ==========================================================
+-- REVIEW SCORE VALIDATION
+-- ==========================================================
+
+SELECT *
+FROM order_reviews
+WHERE review_score NOT BETWEEN 1 AND 5;
