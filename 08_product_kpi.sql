@@ -125,6 +125,21 @@ SELECT
 FROM product_ranking;
 GO
 
+
+---------------------------------------------------------------
+-- Add Check Constraints
+---------------------------------------------------------------
+
+ALTER TABLE fact_seller_kpi
+ADD CONSTRAINT CK_seller_rank
+CHECK (seller_rank IN ('TOP','MID','LOW'));
+GO
+
+ALTER TABLE fact_seller_kpi
+ADD CONSTRAINT CK_seller_lifecycle
+CHECK (seller_lifecycle IN ('FAST_MOVING','SLOW_MOVING'));
+GO
+
 ---------------------------------------------------------------
 -- Validation
 ---------------------------------------------------------------
